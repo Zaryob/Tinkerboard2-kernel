@@ -17,3 +17,38 @@ See Documentation/00-INDEX for a list of what is contained in each file.
 Please read the Documentation/process/changes.rst file, as it contains the
 requirements for building and running the kernel, and information about
 the problems which may result by upgrading your kernel.
+
+```
+# Vanilla kernel from kernel.org, (Github's torvalds/linux only mirrors the
+# master branch, not the LTS ones, see https://github.com/torvalds/linux/branches)
+git clone https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git
+cd linux
+git branch --list --remotes
+git branch --show-current
+git checkout linux-5.4.y # 5.4 is LTS until Dec, 2025 (see: https://www.kernel.org/category/releases.html)
+                         # 5.10 should be the next LTS release, but isn't listed in the above list yet at this time of writing
+
+# Fetch Tinkerboard kernel config
+curl -L https://raw.githubusercontent.com/TinkerBoard/debian_kernel/develop/arch/arm/configs/tinker2_defconfig -o arch/arm/configs/tinker2_defconfig
+
+# Configure the kernel with the downloaded configuration
+# (you shouldn't get errors except a warning about duplicated lines)
+make ARCH=arm tinker2_defconfig -j8
+make ARCH=arm menuconfig # Optional, to add more configuration yourself
+
+# Compile kernel and its modules
+make zImage ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j8
+make modules ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j8
+
+# Tinker's dts is in mainline kernel, under the name rk3288-tinker.dts
+# (see: arm/boot/dts/rk3399-tinker.dts)
+# so compile it as well to a dtb file (binary)
+make ARCH=arm rk3399-tinker.dtb CROSS_COMPILE=arm-linux-gnueabihf- -j8
+
+# Install modules to the SDCard's '/' partition
+sudo make ARCH=arm INSTALL_MOD_PATH=/media/sdX/ modules_install
+
+# Copy freshly compiled kernel to the SDcard's '/boot' partition
+cp arch/arm/boot/zImage /media/sdY/zImage
+cp arch/arm/boot/dts/rk3399-tinker_board_2.dtb /media/sdY/rk3399-miniarm.dtb
+```
